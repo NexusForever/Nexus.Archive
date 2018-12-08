@@ -1,7 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Authors>Jason Couture</Authors>
+    <Company />
+    <Description>Nexus.Archive is a library for reading WildStar index/archive files.</Description>
+    <Copyright>2018 - Jason Couture</Copyright>
+    <PackageProjectUrl>https://github.com/jasoncouture/Nexus.Archive</PackageProjectUrl>
+    <PackageTags>WildStar</PackageTags>
+    <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

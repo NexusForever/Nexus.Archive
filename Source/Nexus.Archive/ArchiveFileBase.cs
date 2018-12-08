@@ -126,7 +126,7 @@ namespace Nexus.Archive
 
         private static MemoryMappedFile OpenFile(string fileName)
         {
-            return MemoryMappedFile.CreateFromFile(fileName, FileMode.Open);
+            return MemoryMappedFile.CreateFromFile(System.IO.File.Open(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite), null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false);
         }
 
         public static ArchiveFileBase FromFile(string fileName)
