@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Archive", "Nexus.Arch
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Archive.Tests", "Nexus.Archive.Tests\Nexus.Archive.Tests.csproj", "{758DE6FD-18C4-4153-B3B1-AA08D000C3C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableExtractor", "TableExtractor\TableExtractor.csproj", "{3985642C-5636-467A-A71D-3DB6B7712701}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TableExtractor", "TableExtractor\TableExtractor.csproj", "{3985642C-5636-467A-A71D-3DB6B7712701}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

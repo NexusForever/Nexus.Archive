@@ -39,7 +39,23 @@ namespace Nexus.Archive.Tests
             var entry = enIndex.FindEntry("ClientDataEN\\en-US.bin");
             Assert.NotNull(entry);
         }
+        [Fact]
+        public void FileTypeHeaderChecks()
+        {
+            var clientDataArchive = LoadArchiveFromPath(Path.Combine("Patch", "ClientData.archive"), true);
 
+        }
+
+        private ArchiveFile LoadArchiveFromPath(string path, bool required = false)
+        {
+            var realPath = Path.Combine(GamePath, path);
+            if (!File.Exists(realPath))
+            {
+                if (required) throw new FileNotFoundException("File not found", realPath);
+                return null;
+            }
+            return (ArchiveFile)ArchiveFileBase.FromFile(realPath);
+        }
         private IndexFile LoadIndexFromPath(string path, bool required = false)
         {
             var realPath = Path.Combine(GamePath, path);

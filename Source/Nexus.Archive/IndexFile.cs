@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
+using DotNet.Globbing;
 
 namespace Nexus.Archive
 {
@@ -15,6 +17,55 @@ namespace Nexus.Archive
         {
             RootFolder = new FolderEntry("", this,
                 new BinaryReader(GetBlockView(rootIndex.BlockIndex), Encoding.UTF8));
+        }
+
+        public IEnumerable<IArchiveFilesystemEntry> GetFilesystemEntries()
+        {
+            return RootFolder.EnumerateChildren(true);
+        }
+        public IEnumerable<IArchiveFilesystemEntry> GetFilesystemEntries(string searchPattern)
+        {
+            return SearchWithGlob(GetFilesystemEntries(), searchPattern);
+        }
+
+        public IEnumerable<IArchiveFolderEntry> GetFolders()
+        {
+            return RootFolder.EnumerateFolders(true);
+        }
+
+        public IEnumerable<IArchiveFolderEntry> GetFolders(string searchPattern)
+        {
+            return SearchWithGlob(GetFolders(), searchPattern);
+        }
+
+        public IEnumerable<IArchiveFileEntry> GetFiles()
+        {
+            return RootFolder.EnumerateFiles(true);
+        }
+
+        public IEnumerable<IArchiveFileEntry> GetFiles(string searchPattern)
+        {
+            return SearchWithGlob(GetFiles(), searchPattern);
+        }
+        
+        private static IEnumerable<T> SearchWithGlob<T>(IEnumerable<T> items, string searchPattern)
+            where T : IArchiveFilesystemEntry
+        {
+            var glob = ParseGlob(searchPattern);
+            foreach(var item in items.Where(i => glob.IsMatch(i.Path)))
+                yield return item;
+        }
+
+        private static Glob ParseGlob(string glob)
+        {
+            var options = new GlobOptions()
+            {
+                Evaluation =
+                {
+                    CaseInsensitive = true
+                }
+            };
+            return Glob.Parse(glob, options);
         }
 
         public IArchiveFolderEntry RootFolder { get; }

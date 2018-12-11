@@ -12,29 +12,32 @@ namespace Nexus.Archive
 {
     public abstract class ArchiveFileBase : IDisposable
     {
-        private static readonly Dictionary<ArchiveType, MemberInfo> TypeHandlers =
-            new Dictionary<ArchiveType, MemberInfo>();
+        private delegate ArchiveFileBase ArchiveFactory(string filePath, MemoryMappedFile file, ArchiveHeader header, BlockInfoHeader[] blockTable, RootIndexBlock rootBlock);
+        private static readonly Dictionary<ArchiveType, ArchiveFactory> TypeHandlers =
+            new Dictionary<ArchiveType, ArchiveFactory>();
 
         static ArchiveFileBase()
         {
-            foreach (var type in typeof(ArchiveFileBase).Assembly.GetTypes()
-                .Where(i => typeof(ArchiveFileBase).IsAssignableFrom(i) && !i.IsAbstract))
-            {
-                var attribute = type.GetCustomAttribute<ArchiveFileTypeAttribute>();
-                if (attribute == null) continue;
-                var argumentTypes = new[]
-                {
-                    typeof(string), typeof(MemoryMappedFile), typeof(ArchiveHeader), typeof(BlockInfoHeader[]),
-                    typeof(RootIndexBlock)
-                };
-                MemberInfo constructor = type.GetConstructor(argumentTypes);
-                MemberInfo method = type.GetMethod("FromFile", BindingFlags.Static, null, argumentTypes, null);
-                if (!(method is MethodInfo methodInfo) ||
-                    !typeof(ArchiveFileBase).IsAssignableFrom(methodInfo.ReturnType))
-                    method = null;
-                if (constructor == null && method == null) continue;
-                TypeHandlers[attribute.Type] = method ?? constructor;
-            }
+            TypeHandlers.Add(ArchiveType.Index, (filePath, file, header, blockTable, rootIndexBlock) => new IndexFile(filePath, file, header, blockTable, rootIndexBlock));
+            TypeHandlers.Add(ArchiveType.Archive, (filePath, file, header, blockTable, rootIndexBlock) => new ArchiveFile(filePath, file, header, blockTable, rootIndexBlock));
+            //foreach (var type in typeof(ArchiveFileBase).Assembly.GetTypes()
+            //    .Where(i => typeof(ArchiveFileBase).IsAssignableFrom(i) && !i.IsAbstract))
+            //{
+            //    var attribute = type.GetCustomAttribute<ArchiveFileTypeAttribute>();
+            //    if (attribute == null) continue;
+            //    var argumentTypes = new[]
+            //    {
+            //        typeof(string), typeof(MemoryMappedFile), typeof(ArchiveHeader), typeof(BlockInfoHeader[]),
+            //        typeof(RootIndexBlock)
+            //    };
+            //    MemberInfo constructor = type.GetConstructor(argumentTypes);
+            //    MemberInfo method = type.GetMethod("FromFile", BindingFlags.Static, null, argumentTypes, null);
+            //    if (!(method is MethodInfo methodInfo) ||
+            //        !typeof(ArchiveFileBase).IsAssignableFrom(methodInfo.ReturnType))
+            //        method = null;
+            //    if (constructor == null && method == null) continue;
+            //    TypeHandlers[attribute.Type] = method ?? constructor;
+            //}
         }
 
         protected ArchiveFileBase(string fileName, MemoryMappedFile file, ArchiveHeader header,
@@ -81,7 +84,7 @@ namespace Nexus.Archive
         private static Stream GetBlockView(BlockInfoHeader blockInfo, MemoryMappedFile file)
         {
             if (blockInfo.Size == 0) return null;
-            return file.CreateViewStream((long) blockInfo.Offset, (long) blockInfo.Size);
+            return file.CreateViewStream((long)blockInfo.Offset, (long)blockInfo.Size);
         }
 
         protected Stream GetBlockView(BlockInfoHeader blockInfo)
@@ -99,7 +102,7 @@ namespace Nexus.Archive
             var startPosition = header.DataHeader.BlockTableOffset;
             var length = header.DataHeader.BlockCount * Marshal.SizeOf<BlockInfoHeader>();
             var archiveDescriptorIndex = -1;
-            using (var reader = new BinaryReader(file.CreateViewStream((long) startPosition, length)))
+            using (var reader = new BinaryReader(file.CreateViewStream((long)startPosition, length)))
             {
                 for (var x = 0; x < header.DataHeader.BlockCount; x++)
                 {
@@ -140,12 +143,7 @@ namespace Nexus.Archive
                     blockPointerInfo.blockPointers[blockPointerInfo.rootDescriptorIndex]);
                 if (!TypeHandlers.TryGetValue(rootBlock.ArchiveType, out var creator))
                     throw new InvalidOperationException($"Unknown archive type: {rootBlock.ArchiveType:G}");
-                var creatorArguments = new object[] {fileName, file, header, blockPointerInfo.blockPointers, rootBlock};
-                if (creator is MethodInfo method)
-                    return (ArchiveFileBase) method.Invoke(null, creatorArguments);
-                var constructorInfo = creator as ConstructorInfo;
-                Debug.Assert(constructorInfo != null);
-                return (ArchiveFileBase) constructorInfo.Invoke(creatorArguments);
+                return creator(fileName, file, header, blockPointerInfo.blockPointers, rootBlock);
             }
             catch
             {

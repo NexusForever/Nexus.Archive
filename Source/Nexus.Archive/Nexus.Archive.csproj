@@ -13,7 +13,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNet.Glob" Version="2.1.1" />
     <PackageReference Include="SharpCompress" Version="0.22.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Writer\" />
   </ItemGroup>
 
 </Project>
