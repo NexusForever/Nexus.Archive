@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using DotNet.Globbing;
 
@@ -17,7 +18,17 @@ namespace Nexus.Archive
         {
             RootFolder = new FolderEntry("", this,
                 new BinaryReader(GetBlockView(rootIndex.BlockIndex), Encoding.UTF8));
+
+            using (var fileStream = System.IO.File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var sha = SHA1.Create())
+            {
+                _fileHash = sha.ComputeHash(fileStream);
+            }
         }
+
+        private readonly byte[] _fileHash;
+
+        public byte[] FileHash => _fileHash.ToArray();
 
         public IEnumerable<IArchiveFilesystemEntry> GetFilesystemEntries()
         {
@@ -47,12 +58,12 @@ namespace Nexus.Archive
         {
             return SearchWithGlob(GetFiles(), searchPattern);
         }
-        
+
         private static IEnumerable<T> SearchWithGlob<T>(IEnumerable<T> items, string searchPattern)
             where T : IArchiveFilesystemEntry
         {
             var glob = ParseGlob(searchPattern);
-            foreach(var item in items.Where(i => glob.IsMatch(i.Path)))
+            foreach (var item in items.Where(i => glob.IsMatch(i.Path)))
                 yield return item;
         }
 

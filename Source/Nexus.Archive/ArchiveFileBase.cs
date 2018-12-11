@@ -84,7 +84,7 @@ namespace Nexus.Archive
         private static Stream GetBlockView(BlockInfoHeader blockInfo, MemoryMappedFile file)
         {
             if (blockInfo.Size == 0) return null;
-            return file.CreateViewStream((long)blockInfo.Offset, (long)blockInfo.Size);
+            return file.CreateViewStream((long)blockInfo.Offset, (long)blockInfo.Size, MemoryMappedFileAccess.Read);
         }
 
         protected Stream GetBlockView(BlockInfoHeader blockInfo)
@@ -102,7 +102,7 @@ namespace Nexus.Archive
             var startPosition = header.DataHeader.BlockTableOffset;
             var length = header.DataHeader.BlockCount * Marshal.SizeOf<BlockInfoHeader>();
             var archiveDescriptorIndex = -1;
-            using (var reader = new BinaryReader(file.CreateViewStream((long)startPosition, length)))
+            using (var reader = new BinaryReader(file.CreateViewStream((long)startPosition, length, MemoryMappedFileAccess.Read)))
             {
                 for (var x = 0; x < header.DataHeader.BlockCount; x++)
                 {
@@ -121,7 +121,7 @@ namespace Nexus.Archive
         private static ArchiveHeader ReadHeader(MemoryMappedFile file)
         {
             var length = Marshal.SizeOf<ArchiveHeader>();
-            using (var stream = file.CreateViewStream(0, length))
+            using (var stream = file.CreateViewStream(0, length, MemoryMappedFileAccess.Read))
             {
                 return ArchiveHeader.ReadFrom(stream);
             }
@@ -129,7 +129,7 @@ namespace Nexus.Archive
 
         private static MemoryMappedFile OpenFile(string fileName)
         {
-            return MemoryMappedFile.CreateFromFile(System.IO.File.Open(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite), null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false);
+            return MemoryMappedFile.CreateFromFile(System.IO.File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), null, 0, MemoryMappedFileAccess.Read, HandleInheritability.Inheritable, false);
         }
 
         public static ArchiveFileBase FromFile(string fileName)

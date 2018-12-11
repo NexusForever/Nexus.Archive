@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Archive.Tests", "Nexu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TableExtractor", "TableExtractor\TableExtractor.csproj", "{3985642C-5636-467A-A71D-3DB6B7712701}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nexus.Patch.Server", "Nexus.Patch.Server\Nexus.Patch.Server.csproj", "{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{3985642C-5636-467A-A71D-3DB6B7712701}.Release|x64.Build.0 = Release|Any CPU
 		{3985642C-5636-467A-A71D-3DB6B7712701}.Release|x86.ActiveCfg = Release|Any CPU
 		{3985642C-5636-467A-A71D-3DB6B7712701}.Release|x86.Build.0 = Release|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Debug|x64.Build.0 = Debug|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Debug|x86.Build.0 = Debug|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Release|x64.ActiveCfg = Release|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Release|x64.Build.0 = Release|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Release|x86.ActiveCfg = Release|Any CPU
+		{1EE7B990-CF0D-454B-B921-70A8BDF2E73A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
