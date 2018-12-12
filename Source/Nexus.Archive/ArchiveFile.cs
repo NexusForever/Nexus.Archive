@@ -32,6 +32,8 @@ namespace Nexus.Archive
             return dataEntries;
         }
 
+        public IEnumerable<FileDataEntry> FileData => _dataEntries.AsReadOnly();
+
         public FileDataEntry GetFileDataEntryByHash(byte[] hash)
         {
             if (hash.Length != 20) throw new ArgumentException("Hash must be exactly 20 bytes.", nameof(hash));

@@ -1,5 +1,6 @@
 ﻿
 using System.Collections.Generic;
+using System.IO;
 using Nexus.Archive;
 
 namespace Nexus.Patch.Server.Services
@@ -11,5 +12,8 @@ namespace Nexus.Patch.Server.Services
 
         int Build { get; }
         IEnumerable<(string filePath, string alias, byte[] hash)> OtherFiles { get; }
+
+        Stream OpenHash(byte[] hash);
+        byte[] GetHash(string fileName);
     }
 }

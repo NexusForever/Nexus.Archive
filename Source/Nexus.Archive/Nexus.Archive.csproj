@@ -17,8 +17,4 @@
     <PackageReference Include="SharpCompress" Version="0.22.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Writer\" />
-  </ItemGroup>
-
 </Project>

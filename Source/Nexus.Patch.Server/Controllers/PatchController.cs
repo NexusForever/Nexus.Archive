@@ -39,31 +39,33 @@ namespace Nexus.Patch.Server.Controllers
         public IActionResult IndexBinHandler(string name)
         {
             var indexFile = $"{name}.index";
-            var index = GameDataFiles.IndexFiles
-                .FirstOrDefault(i => string.Equals(Path.GetFileName((string)i.FileName), indexFile, StringComparison.OrdinalIgnoreCase));
-            return HandleResponse(index?.FileHash);
+            return HandleResponse(GameDataFiles.GetHash(indexFile));
+            //var index = GameDataFiles.IndexFiles
+            //    .FirstOrDefault(i => string.Equals(Path.GetFileName((string)i.FileName), indexFile, StringComparison.OrdinalIgnoreCase));
+            //return HandleResponse(index?.FileHash);
         }
 
         [HttpHead("{version}/{name}.bin", Order = 20)]
         [HttpGet("{version}/{name}.bin", Order = 20)]
         public IActionResult IndexBinContentHandler(int version, string name)
         {
-            var index = GameDataFiles.IndexFiles
-                .FirstOrDefault(i => string.Equals(Path.GetFileName(i.FileName), name, StringComparison.OrdinalIgnoreCase));
-            if (index != null)
-                return HandleResponse(index?.FileHash);
+            return HandleResponse(GameDataFiles.GetHash(name));
+            //var index = GameDataFiles.IndexFiles
+            //    .FirstOrDefault(i => string.Equals(Path.GetFileName(i.FileName), name, StringComparison.OrdinalIgnoreCase));
+            //if (index != null)
+            //    return HandleResponse(index?.FileHash);
 
-            var fileId = GameDataFiles.IndexFiles.OrderByDescending(i => i.Header.DataHeader.Unknown2).SelectMany(i => i.GetFiles()).FirstOrDefault(i => string.Equals(i.FileName, name, StringComparison.OrdinalIgnoreCase));
-            if (fileId != null)
-            {
-                Logger.LogInformation($"Found file {fileId.Path}");
-            }
-            else
-            {
-                return HandleResponse(GameDataFiles.OtherFiles.Where(i => string.Equals(i.alias, name, StringComparison.OrdinalIgnoreCase))
-                    .Select(i => i.hash).FirstOrDefault());
-            }
-            return HandleResponse(fileId?.Hash);
+            //var fileId = GameDataFiles.IndexFiles.OrderByDescending(i => i.Header.DataHeader.Unknown2).SelectMany(i => i.GetFiles()).FirstOrDefault(i => string.Equals(i.FileName, name, StringComparison.OrdinalIgnoreCase));
+            //if (fileId != null)
+            //{
+            //    Logger.LogInformation($"Found file {fileId.Path}");
+            //}
+            //else
+            //{
+            //    return HandleResponse(GameDataFiles.OtherFiles.Where(i => string.Equals(i.alias, name, StringComparison.OrdinalIgnoreCase))
+            //        .Select(i => i.hash).FirstOrDefault());
+            //}
+            //return HandleResponse(fileId?.Hash);
         }
 
         private IActionResult HandleResponse(byte[] data, string contentType = "application/octet-stream")
@@ -95,6 +97,7 @@ namespace Nexus.Patch.Server.Controllers
             //    return NotFound();
             //}
             var hashBytes = ToByteArray(hash);
+            return HandleResponse(GameDataFiles.OpenHash(hashBytes));
             // Check index files first.
             Logger.LogInformation($"Checking index files for hash match: {hash}");
             var indexMatch = GameDataFiles.IndexFiles.FirstOrDefault(i => i.FileHash.SequenceEqual(hashBytes));
@@ -118,7 +121,7 @@ namespace Nexus.Patch.Server.Controllers
                         returnStream = archive.Open(dataEntry); // File(archive.Open(dataEntry), "application/octet-stream");
                         break;
                     }
-                    
+
                 }
 
                 if (returnStream == null)
@@ -135,7 +138,7 @@ namespace Nexus.Patch.Server.Controllers
                                 break;
                             }
                         }
-                        if(returnStream != null) break;
+                        if (returnStream != null) break;
                     }
                 }
 
@@ -143,7 +146,7 @@ namespace Nexus.Patch.Server.Controllers
                 {
                     if (GameDataFiles.OtherFiles.Any(i => i.hash.SequenceEqual(hashBytes)))
                     {
-                        
+
                         var aliasedDataFile = GameDataFiles.OtherFiles.First(i => i.hash.SequenceEqual(hashBytes));
                         Logger.LogInformation($"Found aliased file {aliasedDataFile.alias} with hash {hash} on disk at {aliasedDataFile.filePath}");
                         returnStream = System.IO.File.Open(aliasedDataFile.filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);

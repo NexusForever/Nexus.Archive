@@ -27,12 +27,11 @@ namespace Nexus.Patch.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
-            services.AddSingleton<IGameDataFiles>((serviceProvider) => GameDataFiles.Load(Configuration.GetValue<string>("GameFiles", null),
-                    Configuration.GetValue<int>("Build"), serviceProvider.GetRequiredService<ILogger<GameDataFiles>>()));
+            services.AddSingleton<IGameDataFiles, GameDataFiles>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IServiceProvider serviceProvider)
         {
             if (env.IsDevelopment())
             {
@@ -40,12 +39,11 @@ namespace Nexus.Patch.Server
             }
             else
             {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
+                
             }
 
-            app.UseHttpsRedirection();
             app.UseMvc();
+            serviceProvider.GetRequiredService<IGameDataFiles>();
         }
     }
 }
