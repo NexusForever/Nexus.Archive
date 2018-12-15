@@ -12,7 +12,7 @@ namespace Nexus.Archive
         public long UncompressedSize { get; private set; }
         public long CompressedSize { get; private set; }
         public byte[] Hash { get; private set; }
-        public uint UnknownData { get; private set; }
+        public uint Reserved { get; private set; } // Available for use.
 
         public static FileEntry FromReader(BinaryReader reader)
         {
@@ -24,7 +24,7 @@ namespace Nexus.Archive
             ret.UncompressedSize = reader.ReadInt64();
             ret.CompressedSize = reader.ReadInt64();
             ret.Hash = reader.ReadBytes(20);
-            ret.UnknownData = reader.ReadUInt32();
+            ret.Reserved = reader.ReadUInt32();
             return ret;
         }
 

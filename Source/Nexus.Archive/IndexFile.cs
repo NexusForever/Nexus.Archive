@@ -12,14 +12,14 @@ namespace Nexus.Archive
     [ArchiveFileType(ArchiveType.Index)]
     public sealed class IndexFile : ArchiveFileBase
     {
-        public IndexFile(string fileName, MemoryMappedFile file, ArchiveHeader header,
+        public IndexFile(IViewableData file, ArchiveHeader header,
             BlockInfoHeader[] blockInfoHeaders, RootIndexBlock rootIndex)
-            : base(fileName, file, header, blockInfoHeaders, rootIndex)
+            : base(file, header, blockInfoHeaders, rootIndex)
         {
             RootFolder = new FolderEntry("", this,
                 new BinaryReader(GetBlockView(rootIndex.BlockIndex), Encoding.UTF8));
 
-            using (var fileStream = System.IO.File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var fileStream = System.IO.File.Open(FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (var sha = SHA1.Create())
             {
                 _fileHash = sha.ComputeHash(fileStream);

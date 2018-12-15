@@ -97,6 +97,10 @@ namespace TableExtractor
                 outputPath = args[1];
             }
 
+            var coreDataArchivePath = Path.Combine(args[0], "CoreData.archive");
+            ArchiveFile coreDataArchive = null;
+            if (File.Exists(coreDataArchivePath))
+                coreDataArchive = ArchiveFileBase.FromFile(Path.Combine(args[0], "CoreData.archive")) as ArchiveFile;
             outputPath = Directory.CreateDirectory(outputPath).FullName;
 
             Console.WriteLine("Extracting files from index files in {0} to target path {1}", args[0], outputPath);
@@ -111,7 +115,7 @@ namespace TableExtractor
 
                 try
                 {
-                    var archive = Archive.FromFile(index);
+                    var archive = Archive.FromFile(index, coreDataArchive);
                     ProcessArchive(archive, outputPath);
                 }
                 catch (Exception ex)
@@ -142,5 +146,6 @@ namespace TableExtractor
                 ExtractFile(archive, tblFile, Path.Combine(outputPath, Path.GetFileName(tblFile.Path)));
             }
         }
+
     }
 }

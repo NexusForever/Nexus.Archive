@@ -9,6 +9,6 @@ namespace Nexus.Archive
         long UncompressedSize { get; }
         long CompressedSize { get; }
         byte[] Hash { get; }
-        uint UnknownData { get; }
+        uint Reserved { get; }
     }
 }

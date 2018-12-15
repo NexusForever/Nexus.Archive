@@ -10,6 +10,7 @@
     <PackageProjectUrl>https://github.com/jasoncouture/Nexus.Archive</PackageProjectUrl>
     <PackageTags>WildStar</PackageTags>
     <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

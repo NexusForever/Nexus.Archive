@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
@@ -12,14 +13,24 @@ namespace Nexus.Archive.Tests
 {
     public class StructureTests
     {
-        private const string GamePath = "D:\\SteamLibrary\\steamapps\\common\\WildStar";
-        public ITestOutputHelper TestOutputHelper { get; }
+        private const string GamePath = "D:\\WildStar\\WildStar";
+        public ITestOutputHelper Output { get; }
 
         public StructureTests(ITestOutputHelper testOutputHelper)
         {
-            TestOutputHelper = testOutputHelper;
+            Output = testOutputHelper;
         }
 
+        [Fact]
+        private void OpenAllFiles()
+        {
+            foreach (var file in Directory.EnumerateFiles(GamePath, "*.index", SearchOption.AllDirectories)
+                .Union(Directory.EnumerateFiles(GamePath, "*.archive", SearchOption.AllDirectories))
+                .Select(ArchiveFileBase.FromFile))
+            {
+                Output.WriteLine("{0} - Unknown2: {1:X} ({1})", Path.GetFileName(file.FileName), file.Header.DataHeader.Reserved);
+            }
+        }
         private static ArchiveFileBase OpenFile(string fileName)
         {
             return ArchiveFileBase.FromFile(fileName);
@@ -93,7 +104,7 @@ namespace Nexus.Archive.Tests
 
             foreach (var archive in archives)
             {
-                TestOutputHelper.WriteLine($"{archive.IndexFile.FileName} -> {archive.ArchiveFile?.FileName ?? "<MISSING>"}");
+                Output.WriteLine($"{archive.IndexFile.FileName} -> {archive.ArchiveFile?.FileName ?? "<MISSING>"}");
             }
         }
         [Fact]
@@ -121,7 +132,7 @@ namespace Nexus.Archive.Tests
                 }
             }
             sw.Stop();
-            TestOutputHelper.WriteLine($"Loaded {counter} index files in {sw.ElapsedMilliseconds}ms");
+            Output.WriteLine($"Loaded {counter} index files in {sw.ElapsedMilliseconds}ms");
         }
 
         private ArchiveHeader ReadHeaderFromFile(MemoryMappedFile file)

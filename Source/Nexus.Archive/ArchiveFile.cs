@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 
@@ -10,9 +11,9 @@ namespace Nexus.Archive
     {
         private readonly List<FileDataEntry> _dataEntries;
 
-        public ArchiveFile(string fileName, MemoryMappedFile file, ArchiveHeader header,
+        public ArchiveFile(IViewableData file, ArchiveHeader header,
             BlockInfoHeader[] blockInfoHeaders, RootIndexBlock rootIndex)
-            : base(fileName, file, header, blockInfoHeaders, rootIndex)
+            : base(file, header, blockInfoHeaders, rootIndex)
         {
             _dataEntries = ReadDataHeaders(GetBlockReader(rootIndex.BlockIndex));
         }
@@ -45,11 +46,13 @@ namespace Nexus.Archive
 
         public Stream Open(IArchiveFileEntry fileEntry)
         {
-            return Open(GetFileDataEntryByHash(fileEntry.Hash));
+            var dataEntry = GetFileDataEntryByHash(fileEntry.Hash);
+            return Open(dataEntry);
         }
 
         public Stream Open(FileDataEntry dataEntry)
         {
+            if(dataEntry == null) return null;
             return GetBlockView(dataEntry.BlockIndex);
         }
 
