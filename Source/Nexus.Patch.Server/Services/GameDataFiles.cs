@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Nexus.Archive;
+using Nexus.Patch.Server.Configuration;
 
 namespace Nexus.Patch.Server.Services
 {
@@ -30,9 +31,11 @@ namespace Nexus.Patch.Server.Services
         public HashLookup<T> Find(ArraySegment<byte> hash)
         {
             if (hash.Count == 0) return this;
-            return Children.TryGetValue(hash[0], out var next)
-                ? next?.Find(new ArraySegment<byte>(hash.Array, hash.Offset + 1, hash.Count - 1))
-                : null;
+            var index = 0;
+            var current = this;
+            for (var x = 0; x < hash.Count; x++)
+                if (!current.Children.TryGetValue(hash[x], out current) || current == null) return null;
+            return current;
         }
 
         public void Set(ArraySegment<byte> hash, T value)
@@ -44,11 +47,6 @@ namespace Nexus.Patch.Server.Services
                 {
                     next = new HashLookup<T>(hash[0]);
                     Children[hash[0]] = next;
-                }
-                if (!Children.ContainsKey(hash[0]))
-                {
-                    next = new HashLookup<T>(hash[0]);
-                    Children.Add(hash[0], new HashLookup<T>(hash[0]));
                 }
 
                 next.Set(new ArraySegment<byte>(hash.Array, hash.Offset + 1, hash.Count - 1), value);
@@ -94,75 +92,130 @@ namespace Nexus.Patch.Server.Services
         }
 
         private HashLookup<IHashedFile> _lookup = new HashLookup<IHashedFile>(0, null);
-
         public GameDataFiles(IConfiguration configuration, ILogger<GameDataFiles> logger) : this(
-            configuration.GetValue<string>("GameFiles", null), configuration.GetValue<int>("Build"), logger)
+            configuration.GetValue<string>("GameFiles", null), configuration.GetValue<int>("Build"), configuration.GetSection("AdditionalFiles")?.Get<AdditionalFile[]>(), logger)
         {
 
         }
-        protected GameDataFiles(string basePath, int build, ILogger<GameDataFiles> logger)
+
+        private static byte[] GetFileHash(string fileName)
         {
-            List<ArchiveFileBase> dataFiles = new List<ArchiveFileBase>();
+            using (var stream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var sha = SHA1.Create())
+            {
+                return sha.ComputeHash(stream);
+            }
+        }
+
+        protected GameDataFiles(string basePath, int build, IEnumerable<AdditionalFile> configuredFiles, ILogger<GameDataFiles> logger)
+        {
+            Logger = logger;
+            var additionalFiles = configuredFiles?.ToList() ?? new List<AdditionalFile>();
+            var dataFiles = new List<ArchiveFileBase>();
+            _fileEntries = new List<FileEntry>();
             foreach (var indexFile in Directory.EnumerateFiles(basePath, "*.index", SearchOption.AllDirectories))
             {
+                var stopwatch = Stopwatch.StartNew();
                 var index = ArchiveFileBase.FromFile(indexFile);
-                if (index != null)
-                {
-                    logger.LogInformation($"Loaded file {indexFile}");
-                    dataFiles.Add(index);
-                }
+                if (index == null) continue;
+                stopwatch.Stop();
+                logger.LogInformation($"Loaded file {indexFile} in {stopwatch.ElapsedMilliseconds}ms");
+                dataFiles.Add(index);
             }
 
             foreach (var archiveFile in Directory.EnumerateFiles(basePath, "*.archive", SearchOption.AllDirectories))
             {
+                var stopwatch = Stopwatch.StartNew();
                 var archive = ArchiveFileBase.FromFile(archiveFile);
-                if (archive != null)
-                {
-                    logger.LogInformation($"Loaded file {archiveFile}");
-                    dataFiles.Add(archive);
-                }
-            }
+                if (archive == null) continue;
+                stopwatch.Stop();
+                logger.LogInformation($"Loaded file {archiveFile} in {stopwatch.ElapsedMilliseconds}ms");
+                dataFiles.Add(archive);
+            };
 
-            var launcherPath = Path.Combine(basePath, "WildStar.exe");
-            byte[] launcherHash;
-            using (var launcherStream = File.Open(launcherPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var sha = SHA1.Create())
-            {
-                launcherHash = sha.ComputeHash(launcherStream);
-            }
 
             //return new GameDataFiles(path, dataFiles.OfType<IndexFile>(), dataFiles.OfType<ArchiveFile>(), launcherPath, launcherHash, build);
             Build = build;
             _indexFiles = dataFiles.OfType<IndexFile>().ToList();
             // Warm up file reading now.
             // ReSharper disable ReturnValueOfPureMethodIsNotUsed - Preloading data.
-            _indexFiles.SelectMany(i => i.GetFilesystemEntries()).ToList();
+            Logger.LogInformation("Preloading index file data...");
+            var loadStopwatch = Stopwatch.StartNew();
+            var fileList = _indexFiles.SelectMany(i => i.GetFilesystemEntries()).ToList();
+            loadStopwatch.Stop();
+            Logger.LogInformation("Loaded {fileCount} file and directory information objects from {count} index files in {time}ms", fileList.Count, _indexFiles.Count, loadStopwatch.ElapsedMilliseconds);
             // ReSharper restore ReturnValueOfPureMethodIsNotUsed
             _archiveFiles = dataFiles.OfType<ArchiveFile>().ToList();
-            Logger = logger;
-            _launcherPath = launcherPath;
-            _launcherHash = launcherHash;
-            Logger.LogInformation("Indexing launcher");
-            _lookup.Set(_launcherHash, new LocalFile(_launcherPath));
-            Logger.LogInformation("Indexing index file hashes.");
-            foreach (var index in _indexFiles)
+
+
+            if (!additionalFiles.Any(x =>
+                string.Equals(x.FileName, "Launcher.exe", StringComparison.OrdinalIgnoreCase)))
             {
-                _lookup.Set(index.FileHash, new LocalFile(index.FileName));
+                var launcherPath = Path.Combine(basePath, "Wildstar.exe");
+                if (File.Exists(launcherPath))
+                {
+                    Logger.LogWarning("Launcher.exe not specified in additional files, injecting default launcher from {path}", launcherPath);
+                    additionalFiles.Insert(0, new AdditionalFile()
+                    {
+                        Path = launcherPath,
+                        FileName = "Launcher.exe",
+                        PublishBin = true
+                    });
+                }
+                else
+                    Logger.LogWarning("Launcher.exe not specified in additional files, and Wildstar.exe could not be found at {basePath}, patching will fail with Carbine/NCSoft launcher!", basePath);
             }
 
-            Logger.LogInformation("Indexing client files (Client, Client64, Launcher)");
+
+            Logger.LogInformation("Adding index file hashes to lookup and public names");
+            foreach (var index in _indexFiles)
+            {
+                additionalFiles.Insert(0, new AdditionalFile()
+                {
+                    Path = index.FileName,
+                    FileName = Path.GetFileName(index.FileName),
+                    PublishBin = true
+                });
+            }
+
+            Logger.LogInformation("Adding client files (Client, Client64, Launcher)");
             foreach (var localFile in new[] { "Client", "Client64", "Launcher" }.Select(i => Path.Combine(basePath, i))
                 .Where(Directory.Exists)
                 .SelectMany(i => Directory.EnumerateFiles(i, "*.*", SearchOption.AllDirectories)))
             {
-
-                using (var fileStream = File.Open(localFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                using (var sha = SHA1.Create())
+                additionalFiles.Insert(0, new AdditionalFile()
                 {
-                    var binHash = sha.ComputeHash(fileStream);
-                    _lookup.Set(binHash, new LocalFile(localFile));
-                }
+                    Path = localFile,
+                    FileName = null,
+                    PublishBin = false
+                });
+                //using (var fileStream = File.Open(localFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                //using (var sha = SHA1.Create())
+                //{
+                //    var binHash = sha.ComputeHash(fileStream);
+                //    _lookup.Set(binHash, new LocalFile(localFile));
+                //}
             }
+
+            Logger.LogInformation("Indexing additional configured files");
+            foreach (var file in additionalFiles)
+            {
+                var fileName = file.FileName ?? Path.GetFileName(file.Path);
+                var hash = GetFileHash(file.Path);
+                Logger.LogInformation("Adding file {name} ({filePath}) to index with hash {hash}", fileName, file.Path, BitConverter.ToString(hash).ToLower().Replace("-", ""));
+                _lookup.Set(hash, new LocalFile(file.Path));
+                if (!file.PublishBin) continue;
+                Logger.LogInformation("Adding file {fileName} info to .bin file lookup", fileName);
+                _fileEntries.Add(new FileEntry()
+                {
+                    FileName = fileName,
+                    FilePath = file.Path,
+                    Hash = hash
+                });
+            }
+
+
+
 
             Logger.LogInformation("Indexing archive files");
             foreach (var archive in _archiveFiles)
@@ -178,35 +231,41 @@ namespace Nexus.Patch.Server.Services
 
         public Stream OpenHash(byte[] hash)
         {
-            return _lookup.Find(hash)?.Value?.Open();
+            var ret = _lookup.Find(hash)?.Value?.Open();
+            if (Logger.IsEnabled(LogLevel.Trace))
+            {
+                Logger.LogTrace("OPEN: {hash} ({status})", ToHexString(hash),
+                    ret == null ? "NOT FOUND" : "Ok");
+            }
+            return ret;
         }
 
         public byte[] GetHash(string fileName)
         {
-            if (OtherFiles.Any(i => string.Equals(i.alias, fileName, StringComparison.OrdinalIgnoreCase)))
+            var hash = OtherFiles.Where(i => i.FileName != null).FirstOrDefault(i =>
+                string.Equals(i.FileName, fileName, StringComparison.OrdinalIgnoreCase))?.Hash;
+            if (Logger.IsEnabled(LogLevel.Trace))
             {
-                return OtherFiles.First(i => string.Equals(i.alias, fileName, StringComparison.OrdinalIgnoreCase)).hash;
+                Logger.LogTrace("LOOKUP: {fileName} ({status})", fileName, hash == null ? "NOT FOUND" : ToHexString(hash));
             }
 
-            foreach (var index in _indexFiles)
-            {
-                var name = Path.GetFileName(index.FileName);
-                if (string.Equals(name, fileName, StringComparison.OrdinalIgnoreCase))
-                    return index.FileHash;
-            }
+            return hash;
+        }
 
-            return null;
+        private string ToHexString(byte[] bytes)
+        {
+            return BitConverter.ToString(bytes).ToLower().Replace("-", "");
         }
 
         private List<IndexFile> _indexFiles;
         private List<ArchiveFile> _archiveFiles;
-        private string _launcherPath;
-        private byte[] _launcherHash;
+        private List<FileEntry> _fileEntries;
 
-        public IEnumerable<(string filePath, string alias, byte[] hash)> OtherFiles => new[]
-        {
-            (_launcherPath, "Launcher.exe", _launcherHash)
-        };
+        public IEnumerable<FileEntry> OtherFiles => _fileEntries?.ToArray() ?? Enumerable.Empty<FileEntry>();
+        //public IEnumerable<(string filePath, string alias, byte[] hash)> OtherFiles => new[]
+        //{
+        //    (_launcherPath, "Launcher.exe", _launcherHash)
+        //};
         public IEnumerable<IndexFile> IndexFiles => _indexFiles;
         public IEnumerable<ArchiveFile> ArchiveFiles => _archiveFiles;
 
@@ -214,4 +273,6 @@ namespace Nexus.Patch.Server.Services
         public int Build { get; }
 
     }
+
+
 }

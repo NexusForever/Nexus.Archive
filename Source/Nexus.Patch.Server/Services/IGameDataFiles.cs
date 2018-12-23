@@ -11,9 +11,16 @@ namespace Nexus.Patch.Server.Services
         IEnumerable<ArchiveFile> ArchiveFiles { get; }
 
         int Build { get; }
-        IEnumerable<(string filePath, string alias, byte[] hash)> OtherFiles { get; }
+        IEnumerable<FileEntry> OtherFiles { get; }
 
         Stream OpenHash(byte[] hash);
         byte[] GetHash(string fileName);
+    }
+
+    public class FileEntry
+    {
+        public string FilePath { get; set; }
+        public string FileName { get; set; }
+        public byte[] Hash { get; set; }
     }
 }

@@ -59,14 +59,11 @@ namespace Nexus.Patch.Server.Controllers
         private IActionResult HandleResponse(Stream stream, string contentType = "application/octet-stream")
         {
             if (stream == null) return NotFound();
+            HttpContext.Response.RegisterForDispose(stream);
             if (Request.Method == "GET")
                 return File(stream, contentType);
-            using (stream)
-            {
-                Response.ContentType = contentType;
-                Response.ContentLength = stream.Length;
-            }
-
+            Response.ContentType = contentType;
+            Response.ContentLength = stream.Length;
             return Ok();
         }
 

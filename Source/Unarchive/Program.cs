@@ -10,8 +10,10 @@ namespace Unarchive
         static void Main(string[] args)
         {
             var patchPath = Path.GetFullPath(args[0]);
+            var coreDataArchivePath = Path.Combine(patchPath, "CoreData.archive");
+            ArchiveFile coreDataArchive = File.Exists(coreDataArchivePath) ? (ArchiveFile)ArchiveFileBase.FromFile(coreDataArchivePath) : null;
             var unpackBasePath = Path.GetFullPath(args.Length > 1 ? args[1] : Path.Combine(patchPath, "..", "Data"));
-            var archives = Directory.EnumerateFiles(patchPath, "*.index").Select(Archive.FromFile)
+            var archives = Directory.EnumerateFiles(patchPath, "*.index").Select(i => Archive.FromFile(i, coreDataArchive))
                 .Where(i => i.HasArchiveFile).ToArray();
 
             foreach (var archive in archives)
@@ -44,12 +46,17 @@ namespace Unarchive
                     Console.Write("{0} DONE                         ", file.FileName);
                     Console.WriteLine();
                 }
-                using (var targetStream = File.Open(Path.Combine(unpackBasePath, file.FileName), FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+
+                var outputFileName = Path.Combine(unpackBasePath, file.FileName);
+                using (var targetStream = File.Open(outputFileName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
                 using (var archiveStream = archive.OpenFileStream(file, decompress))
                 {
                     archiveStream.CopyTo(targetStream, 65535, WriteProgress);
                 }
 
+                File.SetLastAccessTime(outputFileName, file.WriteTime.LocalDateTime);
+                File.SetLastWriteTime(outputFileName, file.WriteTime.LocalDateTime);
+                File.SetCreationTime(outputFileName, file.WriteTime.LocalDateTime);
                 ClearProgress();
             }
 
