@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Nexus.Archive.Extensions
 {
-    internal static class GeneralExtensions
+    public static class GeneralExtensions
     {
         public static string ToHexString(this byte[] data)
         {

@@ -1,64 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
-using System.IO.MemoryMappedFiles;
 using SharpCompress.Compressors.LZMA;
 
 namespace Nexus.Archive
 {
-    public interface IViewableData : IDisposable
-    {
-        string FileName { get; }
-        Stream CreateView(long offset, long length);
-        long Length { get; }
-    }
-
-
-
-    public class MemoryMappedViewableData : IViewableData
-    {
-        private FileAccess _fileAccessMode;
-        private MemoryMappedFileAccess _memoryMappedFileAccessMode;
-        private MemoryMappedFile _file;
-        private Stream _fileStream;
-
-        public MemoryMappedViewableData(string fileName, FileAccess fileAccess)
-        {
-            FileName = fileName;
-            _fileAccessMode = fileAccess;
-            switch (fileAccess)
-            {
-                case FileAccess.Read:
-                    _memoryMappedFileAccessMode = MemoryMappedFileAccess.Read;
-                    break;
-                case FileAccess.ReadWrite:
-                    _memoryMappedFileAccessMode = MemoryMappedFileAccess.ReadWrite;
-                    break;
-                default:
-                    throw new NotSupportedException("Only read, or Read/Write is supported");
-            }
-
-            var fileStream = System.IO.File.Open(fileName, FileMode.Open, _fileAccessMode, FileShare.ReadWrite);
-            _fileStream = fileStream;
-            _file = MemoryMappedFile.CreateFromFile(fileStream, null, 0, _memoryMappedFileAccessMode, HandleInheritability.Inheritable, false);
-        }
-
-        public string FileName { get; }
-        public Stream CreateView(long offset, long length)
-        {
-            return _file.CreateViewStream(offset, length, _memoryMappedFileAccessMode);
-        }
-
-        public long Length => _fileStream.Length;
-
-        public void Dispose()
-        {
-            _file?.Dispose();
-            _fileStream?.Dispose();
-        }
-    }
-
-
     public sealed class Archive : IDisposable
     {
         public Archive(IndexFile index, ArchiveFile archive, ArchiveFile coreDataArchive)
@@ -97,14 +43,14 @@ namespace Nexus.Archive
             return handleCompression ? HandleCompression(fileEntry, baseStream) : baseStream;
         }
 
-        private Stream HandleCompression(IArchiveFileEntry fileEntry, Stream baseStream)
+        internal static Stream HandleCompression(IArchiveFileEntry fileEntry, Stream baseStream)
         {
             switch (fileEntry.Flags & (ArchiveFileFlags.CompressedLzma | ArchiveFileFlags.CompressedDeflate))
             {
                 case ArchiveFileFlags.CompressedLzma:
                     var properties = new byte[5];
                     baseStream.Read(properties, 0, properties.Length);
-                    return new LzmaStream(properties, baseStream, baseStream.Length - properties.Length,
+                    return new LzmaStream(properties, baseStream, fileEntry.CompressedSize - properties.Length,
                         fileEntry.UncompressedSize);
                 case ArchiveFileFlags.CompressedDeflate:
                     return new DeflateStream(baseStream, CompressionMode.Decompress, false);
