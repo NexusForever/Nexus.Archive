@@ -7,11 +7,15 @@ namespace Nexus.Archive
 {
     public sealed class Archive : IDisposable
     {
+        public string FileName => Path.GetFileName(FullName);
+        public string Name => Path.GetFileNameWithoutExtension(FullName);
+        public string FullName => IndexFile.FileName;
         public Archive(IndexFile index, ArchiveFile archive, ArchiveFile coreDataArchive)
         {
             IndexFile = index;
             ArchiveFile = archive;
             CoreDataArchive = coreDataArchive;
+            IndexFile.Archive = this;
         }
 
         public IndexFile IndexFile { get; }
