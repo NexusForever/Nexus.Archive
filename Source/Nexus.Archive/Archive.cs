@@ -53,7 +53,7 @@ namespace Nexus.Archive
             {
                 case ArchiveFileFlags.CompressedLzma:
                     var properties = new byte[5];
-                    baseStream.Read(properties, 0, properties.Length);
+                    baseStream.ReadExactly(properties, 0, properties.Length);
                     return new LzmaStream(properties, baseStream, fileEntry.CompressedSize - properties.Length,
                         fileEntry.UncompressedSize);
                 case ArchiveFileFlags.CompressedDeflate:

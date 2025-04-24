@@ -21,8 +21,8 @@ namespace Nexus.Archive
         public Stream CreateView(long offset, long length)
         {
             _file.Seek(offset, SeekOrigin.Begin);
-            byte[] data = new byte[length];
-            _file.Read(data, 0, data.Length);
+            var data = new byte[length];
+            _file.ReadExactly(data, 0, data.Length);
             return new MemoryStream(data);
         }
 
