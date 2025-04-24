@@ -8,4 +8,8 @@
     <ProjectReference Include="..\Nexus.Archive\Nexus.Archive.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.AutoActivation" Version="9.0.0" />
+  </ItemGroup>
+
 </Project>
