@@ -1,7 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Nexus.Patch.Server.Services;
@@ -31,8 +29,4 @@ public class Program
     
     public static WebApplicationBuilder CreateWebApplication(string[] args) 
         => WebApplication.CreateBuilder(args);
-
-    public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-        WebHost.CreateDefaultBuilder(args)
-            .UseStartup<Startup>();
 }
