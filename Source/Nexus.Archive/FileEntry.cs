@@ -13,19 +13,32 @@ namespace Nexus.Archive
         public long CompressedSize { get; private set; }
         public byte[] Hash { get; private set; }
         public uint Reserved { get; private set; } // Available for use.
+        public Stream OpenRead(bool decompress = true)
+        {
+            return Archive.OpenFileStream(this, decompress);
+        }
 
         public static FileEntry FromReader(BinaryReader reader)
         {
-            var ret = new FileEntry();
-            ret.NameOffset = reader.ReadInt32();
-            ret.Flags = (ArchiveFileFlags) reader.ReadUInt32();
+            var nameOffset = reader.ReadInt32();
+            var archiveFileFlags = reader.ReadUInt32();
             var fileTime = reader.ReadInt64();
-            ret.WriteTime = DateTimeOffset.FromFileTime(fileTime);
-            ret.UncompressedSize = reader.ReadInt64();
-            ret.CompressedSize = reader.ReadInt64();
-            ret.Hash = reader.ReadBytes(20);
-            ret.Reserved = reader.ReadUInt32();
-            return ret;
+            var writeTime = DateTimeOffset.FromFileTime(fileTime);
+            var uncompressedSize = reader.ReadInt64();
+            var compressedSize = reader.ReadInt64();
+            var hash = reader.ReadBytes(20);
+            var reserved = reader.ReadUInt32();
+
+            return new FileEntry()
+            {
+                NameOffset = nameOffset,
+                Flags = (ArchiveFileFlags)archiveFileFlags,
+                WriteTime = writeTime,
+                UncompressedSize = uncompressedSize,
+                CompressedSize = compressedSize,
+                Hash = hash,
+                Reserved = reserved
+            };
         }
 
         public override string ToString()

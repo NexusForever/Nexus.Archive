@@ -27,6 +27,7 @@ namespace Nexus.Archive
         }
 
         private readonly byte[] _fileHash;
+        private Archive _archive;
 
         public byte[] FileHash => _fileHash.ToArray();
 
@@ -80,6 +81,16 @@ namespace Nexus.Archive
         }
 
         public IArchiveFolderEntry RootFolder { get; }
+
+        public Archive Archive
+        {
+            get => _archive;
+            internal set
+            {
+                _archive = value;
+                RootFolder.Archive = value;
+            }
+        }
 
         public IArchiveFilesystemEntry FindEntry(string archivePath)
         {

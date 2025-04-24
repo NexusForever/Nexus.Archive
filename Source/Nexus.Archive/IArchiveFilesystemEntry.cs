@@ -5,5 +5,6 @@
         string Path { get; }
         string FileName { get; }
         string FolderPath { get; }
+        Archive Archive { get; internal set; }
     }
 }

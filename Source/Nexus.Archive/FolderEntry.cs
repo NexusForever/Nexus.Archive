@@ -19,7 +19,7 @@ namespace Nexus.Archive
         {
             _index = indexFile;
             Path = name;
-            _lazyChildrenReader = new Lazy<List<IArchiveFilesystemEntry>>(ReadChildren, false);
+            _lazyChildrenReader = new Lazy<List<IArchiveFilesystemEntry>>(ReadChildren, true);
             Subdirectories = reader.ReadInt32();
             Files = reader.ReadInt32();
             var dataSize = FolderPointer.Size * Subdirectories + FileEntry.Size * Files + 8;
@@ -31,9 +31,16 @@ namespace Nexus.Archive
             for (var x = 0; x < Files; x++)
             {
                 _files[x] = FileEntry.FromReader(reader);
-                if (((int) _files[x].Flags & 1) != 1)
+                if (((int)_files[x].Flags & 1) != 1)
                     Debugger.Break();
             }
+
+            foreach (var folder in _folderPointers)
+                folder.Name = GetChildPath(ReadName((int)folder.NameOffset));
+
+            foreach (var file in _files)
+                file.Path = GetChildPath(ReadName(file.NameOffset));
+            return;
 
             string ReadName(int itemNameOffset)
             {
@@ -44,17 +51,23 @@ namespace Nexus.Archive
 
                 return nameBuilder.ToString();
             }
+        }
 
-            foreach (var folder in _folderPointers)
-                folder.Name = GetChildPath(ReadName((int) folder.NameOffset));
-
-            foreach (var file in _files)
-                file.Path = GetChildPath(ReadName(file.NameOffset));
-            //var nameData = reader.ReadBytes((int)nameLength);
+        public override Archive Archive
+        {
+            get => base.Archive;
+            set
+            {
+                base.Archive = value;
+                if (!_lazyChildrenReader.IsValueCreated) return;
+                foreach (var entry in Children)
+                    entry.Archive = value;
+            }
         }
 
         public int Subdirectories { get; }
         public int Files { get; }
+        private object _lock = new object();
         public IEnumerable<IArchiveFilesystemEntry> Children => _lazyChildrenReader.Value;
 
         public IEnumerable<IArchiveFilesystemEntry> EnumerateChildren(bool recurse = false)
@@ -92,13 +105,25 @@ namespace Nexus.Archive
 
         private List<IArchiveFilesystemEntry> ReadChildren()
         {
-            var allFiles = new List<IArchiveFilesystemEntry>();
-            foreach (var folderPointer in _folderPointers)
-                allFiles.Add(new FolderEntry(folderPointer.Name, _index,
-                    new BinaryReader(_index.GetBlockView(folderPointer.FolderBlock), Encoding.UTF8)));
+            lock (_lock)
+            {
+                var allFiles = new List<IArchiveFilesystemEntry>();
+                foreach (var folderPointer in _folderPointers)
+                {
+                    var file = new FolderEntry(folderPointer.Name, _index,
+                        new BinaryReader(_index.GetBlockView(folderPointer.FolderBlock), Encoding.UTF8));
+                    allFiles.Add(file);
+                    file.Archive = Archive;
+                }
 
-            allFiles.AddRange(_files);
-            return allFiles;
+                foreach (var file in _files)
+                {
+                    file.Archive = Archive;
+                }
+
+                allFiles.AddRange(_files);
+                return allFiles;
+            }
         }
     }
 }
