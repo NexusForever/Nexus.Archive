@@ -1,0 +1,52 @@
+name: "Publish NuGet packages"
+on:
+  push:
+    branches:
+      - master
+      - release/*
+    tags:
+      - release/*
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.ref }}-${{ github.workflow }}
+  
+jobs:
+  publish:
+    permissions: 
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      # TODO: Use nbgv to create a release branch, push it, merge it back into master, bump to pre-release, and push
+      # Also - Generate release notes
+      - run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.x'
+      - run: dotnet pack -c Release -o ./artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path:
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
+      - run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            -k ${{ secrets.GITHUB_TOKEN }} \
+            -s https://nuget.pkg.github.com/NexusForever/index.json \
+            --skip-duplicate \
+            --no-symbols
+      - if: ${{ github.ref != 'refs/heads/master' }}
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            -k ${{ secrets.NUGET_API_KEY }} \
+            -s https://api.nuget.org/v3/index.json \
+            --skip-duplicate \
+            --no-symbols
