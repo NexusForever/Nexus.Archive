@@ -1,10 +1,9 @@
-﻿namespace Nexus.Archive
+﻿namespace Nexus.Archive;
+
+public interface IArchiveFilesystemEntry
 {
-    public interface IArchiveFilesystemEntry
-    {
-        string Path { get; }
-        string FileName { get; }
-        string FolderPath { get; }
-        Archive Archive { get; internal set; }
-    }
+    string Path { get; }
+    string FileName { get; }
+    string FolderPath { get; }
+    Archive Archive { get; internal set; }
 }

@@ -1,9 +1,8 @@
-﻿namespace Nexus.Patch.Server.Configuration
+﻿namespace Nexus.Patch.Server.Configuration;
+
+public class AdditionalFile
 {
-    public class AdditionalFile
-    {
-        public string Path { get; set; }
-        public string FileName { get; set; }
-        public bool PublishBin { get; set; }
-    }
+    public string Path { get; set; }
+    public string FileName { get; set; }
+    public bool PublishBin { get; set; }
 }

@@ -1,8 +1,7 @@
-﻿namespace Nexus.Archive
+﻿namespace Nexus.Archive;
+
+public struct BlockHeader
 {
-    public struct BlockHeader
-    {
-        public uint DirectoryCount;
-        public uint FileCount;
-    }
+    public uint DirectoryCount;
+    public uint FileCount;
 }

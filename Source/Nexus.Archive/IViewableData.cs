@@ -1,12 +1,11 @@
 ﻿using System;
 using System.IO;
 
-namespace Nexus.Archive
+namespace Nexus.Archive;
+
+public interface IViewableData : IDisposable
 {
-    public interface IViewableData : IDisposable
-    {
-        string FileName { get; }
-        Stream CreateView(long offset, long length);
-        long Length { get; }
-    }
+    string FileName { get; }
+    Stream CreateView(long offset, long length);
+    long Length { get; }
 }
