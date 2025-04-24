@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nexus.Archive\Nexus.Archive.csproj" />
+    <ProjectReference Include="..\..\src\Nexus.Archive\Nexus.Archive.csproj" />
   </ItemGroup>
 
 </Project>
