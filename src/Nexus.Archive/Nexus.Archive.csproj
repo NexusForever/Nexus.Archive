@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
     <Authors>Jason Couture</Authors>
     <Company />
     <Description>Nexus.Archive is a library for reading WildStar index/archive files.</Description>
