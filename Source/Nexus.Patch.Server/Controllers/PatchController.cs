@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Nexus.Archive;
 using Nexus.Patch.Server.Services;
 
 namespace Nexus.Patch.Server.Controllers
