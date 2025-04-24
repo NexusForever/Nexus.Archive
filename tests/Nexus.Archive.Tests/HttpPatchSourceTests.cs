@@ -53,7 +53,7 @@ public class PatcherTest : IClassFixture<PatchSourceFixture>, IClassFixture<Core
     public Stopwatch DownloadStopwatch { get; }
     public string PatchPath { get; set; }
 
-    [Fact]
+    [Fact(Skip = "This is a manual test")]
     public async Task DownloadIndexFiles()
     {
         foreach (var file in Directory.GetFiles(PatchPath, "*.index")
@@ -71,7 +71,7 @@ public class PatcherTest : IClassFixture<PatchSourceFixture>, IClassFixture<Core
         await patcher.Patch(CancellationToken.None);
     }
 
-    [Fact]
+    [Fact(Skip = "This is a manual test")]
     public async Task DownloadAndProcessPatchIndexAsync()
     {
         // This stuff here is bootstrap, we trust the files are correct, because we assume this was done first.
@@ -172,7 +172,7 @@ public class HttpPatchSourceTests : IClassFixture<PatchSourceFixture>
     }
 
 
-    [Fact]
+    [Fact(Skip = "This is a manual test")]
     public async Task ServerBuildVersion()
     {
         var serverBuild = await PatchSource.GetServerBuildAsync();
@@ -180,7 +180,7 @@ public class HttpPatchSourceTests : IClassFixture<PatchSourceFixture>
         Assert.Equal(16042, serverBuild);
     }
 
-    [Fact]
+    [Fact(Skip = "This is a manual test")]
     public async Task GetPatchIndexWithBuildNumber()
     {
         Output.WriteLine("Downloading Patch.index with build number");
@@ -190,7 +190,7 @@ public class HttpPatchSourceTests : IClassFixture<PatchSourceFixture>
         await VerifyIndex("Patch.index", buildVersion).ConfigureAwait(false);
     }
 
-    [Fact]
+    [Fact(Skip = "This is a manual test")]
     public async Task DownloadMultipleIndexFiles()
     {
         Output.WriteLine("Testing multiple index files...");
@@ -229,12 +229,10 @@ public class HttpPatchSourceTests : IClassFixture<PatchSourceFixture>
         }
     }
 
-    [Fact]
+    [Fact(Skip = "This is a manual test")]
     public async Task GetPatchIndexWithoutBuildNumber()
     {
         Output.WriteLine("Downloading Patch.index without providing build number");
         await VerifyIndex("Patch.index").ConfigureAwait(false);
     }
-
-
 }
